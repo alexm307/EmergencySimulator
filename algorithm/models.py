@@ -17,11 +17,8 @@ class BaseSQLModel(SQLModel):
     class Config:
         validate_assignment = True
 
-
-class Location(BaseSQLModel, table=True):
-    __tablename__ = "locations"
-
-    location_id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+class LocationBase(BaseSQLModel):
+    """Base class for Location model."""
     county: str
     city: str
     latitude: float
@@ -29,3 +26,10 @@ class Location(BaseSQLModel, table=True):
     medical: int
     fire: int
     police: int
+    rescue: int
+    utlity: int
+
+class Location(LocationBase, table=True):
+    __tablename__ = "locations"
+
+    location_id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
