@@ -1,4 +1,4 @@
-from models import Location
+from models import Location, LocationBase
 import math
 
 def calculate_location_distance(loc1: Location, loc2: Location) -> float:
@@ -82,3 +82,41 @@ def rank_locations_by_distance(central: Location, locations: list[Location]) -> 
 def process_city(city:Location):
     if city.county == "Maramures":
         pass
+
+
+def fulfill_resource_needs(
+    city_in_need: LocationBase,
+    supply_locations_sorted: list[Location]
+) -> bool:
+
+    # The resource fields we want to check
+    resource_fields = ["medical", "fire", "police", "rescue", "utility"]
+    
+    for resource_type in resource_fields:
+        needed = getattr(city_in_need, resource_type)
+        if needed is None or needed <= 0:
+            continue  # No need for this resource, move on
+        
+        # Try to fulfill 'needed' from the supply locations
+        for supplier in supply_locations_sorted:
+            #TODO: add getByCity
+            available = getattr(supplier, resource_type)
+            if available <= 0:
+                continue  # This supplier has none of this resource
+
+            # If this supplier alone can fulfill the entire need:
+            if available >= needed:
+                setattr(supplier, resource_type, available - needed)
+                needed = 0
+                #TODO: dispatch post request
+                break  # We've satisfied this resource completely
+
+            else:
+                # Supplier can provide only a part of what's needed
+                setattr(supplier, resource_type, 0)
+                needed -= available
+                #TODO: dispatch post request
+                # Move on to the next supplier to fulfill the remainder
+    
+    # If we reach here, all resources have been successfully fulfilled
+    return True
