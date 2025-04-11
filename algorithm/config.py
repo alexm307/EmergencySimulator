@@ -36,9 +36,10 @@ class AlgorithmConfig(BaseSettings):
 def get_algorithm_config() -> AlgorithmConfig:
     return AlgorithmConfig()
 
-algorithm_config = get_algorithm_config()
+if __name__ == "__main__":
+    algorithm_config = get_algorithm_config()
 
-print(algorithm_config.api_host)
+    print(algorithm_config.api_host)
 
 # def get_connection_string(database_config: Annotated[DatabaseConfig, Depends(get_database_config)]) -> str:
 #     return (
