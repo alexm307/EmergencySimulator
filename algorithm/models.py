@@ -17,6 +17,14 @@ class BaseSQLModel(SQLModel):
     class Config:
         validate_assignment = True
 
+class LocationApiResponse(BaseSQLModel):
+    """Base class for Location API response model."""
+    county: str
+    city: str
+    latitude: float
+    longitude: float
+    quantity: int
+
 class LocationBase(BaseSQLModel):
     """Base class for Location model."""
     county: str
@@ -27,7 +35,7 @@ class LocationBase(BaseSQLModel):
     fire: int
     police: int
     rescue: int
-    utlity: int
+    utility: int
 
 class Location(LocationBase, table=True):
     __tablename__ = "locations"
