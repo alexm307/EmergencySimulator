@@ -19,13 +19,9 @@ def algorithm_handler():
     algorithm.locations = api_service.get_locations()
     services = ["medical", "fire", "police", "rescue", "utility"]
     for service in services:
-        locations_with_service = api_service.get_service(service)
-        for location in locations_with_service:
-            # Find the corresponding location in the algorithm's locations list
-            for loc in algorithm.locations:
-                if loc.city == location.city and loc.county == location.county:
-                    setattr(loc, service, location.quantity)
-                    break
+        for location in algorithm.locations:
+            quantity = api_service.get_service_for_city(service, location.city, location.county)
+            setattr(location, service, quantity)
 
     #print(algorithm.locations)
     epicenter_coords = find_locations_epicenter(algorithm.locations, "Maramureș")
@@ -45,6 +41,13 @@ def algorithm_handler():
     )
 
     algorithm.ranking = rank_locations_by_distance(epicenter, algorithm.locations)
+    for location in algorithm.ranking:
+        print(f"Location: {location.city}, County: {location.county}, Medical: {location.medical}, Fire: {location.fire}, Police: {location.police}, Rescue: {location.rescue}, Utility: {location.utility}")
+    # emergency = api_service.next()
+    # while emergency is not None:
+
+
+    #     emergency = api_service.next()
     # print("Ranked locations:")
     # for loc in algorithm.ranking:
     #     print(f"Location: {loc.city}, County: {loc.county}")

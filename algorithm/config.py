@@ -22,6 +22,8 @@ class AlgorithmConfig(BaseSettings):
     seed: str
     target_dispatches: int
     max_active_calls: int
+    retry_count: int
+    timeout: float
 
     model_config = SettingsConfigDict(
         env_prefix= "ALGORITHM_",

@@ -72,7 +72,7 @@ def rank_locations_by_distance(central: Location, locations: list[Location]) -> 
     for loc in locations:
         distance = calculate_location_distance(central, loc)
         if loc.police == 0 and loc.fire == 0 and loc.rescue == 0 and loc.utility == 0 and loc.medical == 0:
-            print(loc.city)
+            #print(loc.city)
             continue # skip locations without any service
         distance_list.append((loc, distance))
 
