@@ -57,11 +57,12 @@ function App() {
       })
       .catch((error) => {
         console.error('Error fetching next emergency:', error);
+        toast.error("Error fetching next emergency!");
       });
   };
 
   // Function to fetch resource markers from a given resource search endpoint.
-  // Change: filter out any markers of the same resource type so that they are overwritten.
+  // Changes: Filter out markers for the same resource type so that we overwrite previous values.
   const searchResource = (resourceType) => {
     axios
       .get(`${API_BASE_URL}/${resourceType}/search`)
@@ -72,13 +73,14 @@ function App() {
           resourceType,
         }));
         setResourceMarkers((prev) => {
-          // Remove any markers with the same resource type.
+          // Remove any markers of the same resource type.
           const filtered = prev.filter((marker) => marker.resourceType !== resourceType);
           return [...filtered, ...markers];
         });
       })
       .catch((error) => {
         console.error(`Error fetching ${resourceType} resources:`, error);
+        toast.error(`Error fetching ${resourceType} resources!`);
       });
   };
 
@@ -176,7 +178,10 @@ function App() {
           zoom={10}
           style={{ height: '100%', width: '100%', borderRadius: '8px' }}
         >
-          <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
           {/* Red markers for emergencies */}
           {emergencies.map((emergency, index) => (
             <Marker key={`emergency-${index}`} position={[emergency.latitude, emergency.longitude]} icon={redIcon}>
