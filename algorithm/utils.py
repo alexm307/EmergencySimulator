@@ -110,51 +110,62 @@ def fulfill_emergency_needs(
     api_service: APIService,
 ) -> bool:
     resource_fields = ["medical", "fire", "police", "rescue", "utility"]
+    resource_needed = [getattr(emergency_location, resource_type) for resource_type in resource_fields]
+    indices_to_remove = []
     completed = True
     print("EMERGENCY LOCATION " + emergency_location.city)
-    for resource_type in resource_fields:
-        print("RESOURCE " + resource_type)
-        needed = getattr(emergency_location, resource_type)
-        if needed is None or needed <= 0:
-            continue  # No need for this resource, move on
-        print("NEEDED " + str(needed))
-        # Try to fulfill 'needed' from the supply locations ranked by closeness to emergency
-        for supplier in supply_locations_sorted:
-            available = api_service.get_service_for_city(resource_type, supplier.city, supplier.county)
-            print("CITY " + str(supplier.city) + " AVAILABLE " + str(available))
-            if available <= 0:
-                continue  # This supplier has none of this resource
+    for index, supplier in enumerate(supply_locations_sorted):
+        available_in_city = [api_service.get_service_for_city(resource_type, supplier.city, supplier.county) for resource_type in resource_fields]
+        if all(quantity == 0 for quantity in available_in_city):
+            print(f"Supplier at index {index} ({supplier.city}) has no resources — will be removed.")
+            indices_to_remove.append(index)
+        else:
+            for index_resource, resource_type in enumerate(resource_fields):
+                print("RESOURCE " + resource_type)
+                needed = resource_needed[index_resource]
+                if needed is None or needed <= 0:
+                    continue  # No need for this resource, move on
+                print("NEEDED " + str(needed))
+                # Try to fulfill 'needed' from the supply locations ranked by closeness to emergency
 
-            # If this supplier alone can fulfill the entire need:
-            if available >= needed:
-                api_service.dispatch_service_to_city(
-                    resource_type,
-                    supplier.city,
-                    supplier.county,
-                    emergency_location.city,
-                    emergency_location.county,
-                    needed
-                )
-                needed = 0
-                break  # We've satisfied this resource completely
+                available = available_in_city[index_resource]
+                print("CITY " + str(supplier.city) + " AVAILABLE " + str(available))
+                if available <= 0:
+                    continue  # This supplier has none of this resource
 
-            else:
-                # Supplier can provide only a part of what's needed
-                api_service.dispatch_service_to_city(
-                    resource_type,
-                    supplier.city,
-                    supplier.county,
-                    emergency_location.city,
-                    emergency_location.county,
-                    available
-                )
-                needed -= available
-                # Move on to the next supplier to fulfill the remainder
-        if needed > 0:
-            # If we exit the loop and still have unmet needs, mark as incomplete
-            completed = False
-            print(f"Emergency location {emergency_location.city} still needs {needed} of {resource_type}")
-    return completed
+                # If this supplier alone can fulfill the entire need:
+                if available >= needed:
+                    api_service.dispatch_service_to_city(
+                        resource_type,
+                        supplier.city,
+                        supplier.county,
+                        emergency_location.city,
+                        emergency_location.county,
+                        needed
+                    )
+                    resource_needed[index_resource] = 0  # Mark this resource as fully satisfied
+                    break  # We've satisfied this resource completely
+
+                else:
+                    # Supplier can provide only a part of what's needed
+                    api_service.dispatch_service_to_city(
+                        resource_type,
+                        supplier.city,
+                        supplier.county,
+                        emergency_location.city,
+                        emergency_location.county,
+                        available
+                    )
+                    resource_needed[index_resource] -= available
+                    # Move on to the next supplier to fulfill the remainder
+        if all(quantity == 0 for quantity in resource_needed):
+            return [indices_to_remove, True]
+
+    # If we still have unmet needs, mark as incomplete
+    if any(quantity > 0 for quantity in resource_needed):
+        completed = False
+        print(f"Emergency location {emergency_location.city} still needs {resource_needed} resources")
+    return [indices_to_remove, completed]
 
 def parse_emergency_location_payload(payload: dict) -> EmergencyLocation:
     """

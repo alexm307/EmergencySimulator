@@ -45,8 +45,12 @@ def algorithm_handler():
     # idx = 0
     while emergency is not None:
         emergency_processed = parse_emergency_location_payload(emergency)
-        completed = solve_emergency(epicenter, emergency_processed, algorithm.ranking, api_service)
+        [indices_to_remove, completed] = solve_emergency(epicenter, emergency_processed, algorithm.ranking, api_service)
         print(f"Emergency completed: {completed}")
+        new_ranking = algorithm.ranking.copy()
+        for i in sorted(indices_to_remove, reverse=True):
+            del new_ranking[i]
+        algorithm.ranking = new_ranking
         # print(idx)
         # if emergency_processed.county != "Maramureș":
         #     print(f"Emergency: {emergency_processed}")
