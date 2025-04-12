@@ -21,6 +21,7 @@ class AlgorithmEngine:
     def run(self):
         """Run the main algorithm loop for emergency handling."""
         self.api_service.start_simulation()
+        self.api_service.authenticate()
         self.locations = self.api_service.get_locations()
 
         epicenter_coords = self.solver.find_locations_epicenter(self.locations, "Maramureș")

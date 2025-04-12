@@ -16,6 +16,46 @@ class APIService:
 
     def __init__(self):
         self.algorithm_config = get_algorithm_config()
+        self.token = None
+        self.refresh_token_value = None
+
+    def authenticate(self):
+        """
+        Authenticate with the API and retrieve the token.
+        """
+        url = f"{self.algorithm_config.api_host}/auth/login"
+        body = {"username": "distancify", "password": "hackathon"}
+        response = requests.post(url, json=body)
+        if response.status_code == 200:
+            data = response.json()
+            self.token = data.get("token")
+            self.refresh_token_value = data.get("refreshToken")
+            logger.info("Authentication successful.")
+        else:
+            logger.error(f"Failed to authenticate: {response.status_code} - {response.text}")
+
+    def refresh_token(self):
+        """
+        Refresh the authentication token using the refresh token.
+        """
+        url = f"{self.algorithm_config.api_host}/auth/refreshToken"
+        headers = {"refresh_token": self.refresh_token_value}
+        response = requests.post(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            self.token = data.get("token")
+            self.refresh_token_value = data.get("refreshToken")
+            logger.info("Token refreshed.")
+        else:
+            logger.error(f"Failed to refresh token: {response.status_code} - {response.text}")
+
+    def _auth_headers(self):
+        """
+        Generate headers for authentication.
+        Returns:
+            dict: Headers with authorization token.
+        """
+        return {"Authorization": f"Bearer {self.token}"} if self.token else {}
 
     def _send_post_request_with_retry(self, url: str, params: dict, body: dict):
         """
@@ -34,7 +74,10 @@ class APIService:
 
         for attempt in range(retry):
             try:
-                response = requests.post(url, params=params, timeout=timeout, json=body)
+                response = requests.post(url, params=params, timeout=timeout, json=body, headers=self._auth_headers())
+                if response.status_code == 404:
+                    self.refresh_token()
+                    continue
                 if response.status_code == 200:
                     if response.text.strip():
                         try:
@@ -71,7 +114,10 @@ class APIService:
 
         for attempt in range(retry):
             try:
-                response = requests.get(url, params=params, timeout=timeout)
+                response = requests.get(url, params=params, timeout=timeout, headers=self._auth_headers())
+                if response.status_code == 401:
+                    self.refresh_token()
+                    continue
                 if response.status_code == 200:
                     if response.text.strip():
                         try:
