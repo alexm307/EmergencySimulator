@@ -24,9 +24,10 @@ class AlgorithmEngine:
         self.api_service.authenticate()
         self.locations = self.api_service.get_locations()
 
-        epicenter_coords = self.solver.find_locations_epicenter(self.locations, "Maramureș")
+        # Find the epicenter of the priority county in order to rank other locations by distance to it
+        epicenter_coords = self.solver.find_locations_epicenter(self.locations, self.api_service.algorithm_config.priority_county)
         epicenter = LocationBase(
-            county="Maramureș",
+            county=self.api_service.algorithm_config.priority_county,
             city="Epicenter",
             latitude=epicenter_coords[0],
             longitude=epicenter_coords[1],
@@ -37,7 +38,7 @@ class AlgorithmEngine:
 
         while emergency is not None:
             emergency_obj = self._parse_emergency(emergency)
-            indices_to_remove, completed = self.solver.solve_emergency(epicenter, emergency_obj, self.ranking)
+            indices_to_remove, completed = self.solver.solve_emergency(self.api_service.algorithm_config.priority_county, epicenter, emergency_obj, self.ranking)
             logger.info(f"Emergency in {emergency_obj.city} completed: {completed}")
 
             for i in sorted(indices_to_remove, reverse=True):

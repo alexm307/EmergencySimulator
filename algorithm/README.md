@@ -35,14 +35,15 @@ It is fully containerized with Docker and prepared for deployment in environment
 
 ## ⚙️ Environment Variables (`.env`)
 
-| Variable                     | Description                                                                 |
+| Variable                     | Description                                                                |
 |-----------------------------|-----------------------------------------------------------------------------|
 | `ALGORITHM_API_HOST`        | The base URL of the simulation/emulator API                                 |
 | `ALGORITHM_SEED`            | Seed for the simulation — keeps runs consistent if needed                   |
-| `ALGORITHM_TARGET_DISPATCHES` | Total number of dispatches to aim for during the simulation              |
-| `ALGORITHM_MAX_ACTIVE_CALLS`  | Maximum number of calls the simulation can handle at once                |
-| `ALGORITHM_RETRY_COUNT`     | How many times to retry a failed request to the simulation API             |
-| `ALGORITHM_TIMEOUT`         | Timeout (in seconds) for each API call                                     |
+| `ALGORITHM_TARGET_DISPATCHES` | Total number of dispatches to aim for during the simulation               |
+| `ALGORITHM_MAX_ACTIVE_CALLS`  | Maximum number of calls the simulation can handle at once                 |
+| `ALGORITHM_RETRY_COUNT`     | How many times to retry a failed request to the simulation API              |
+| `ALGORITHM_TIMEOUT`         | Timeout (in seconds) for each API call                                      |
+| `ALGORITHM_PRIORITY_COUNTY` | Priority county for which the algorithm is optimized for solving            |
 | `DB_HOST`                   | Hostname of the PostgreSQL database                                         |
 | `DB_PORT`                   | Port the database is exposed on (default: 5432)                             |
 | `DB_USERNAME`               | Database username                                                           |

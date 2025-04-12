@@ -110,7 +110,7 @@ class EmergencySolver:
         ]
         return [loc for loc, _ in sorted(cost_list, key=lambda x: x[1])]
 
-    def solve_emergency(self, central: LocationBase, emergency_location: EmergencyLocation, supply_locations: list[Location]) -> tuple[list[int], bool]:
+    def solve_emergency(self, priority_county: str, central: LocationBase, emergency_location: EmergencyLocation, supply_locations: list[Location]) -> tuple[list[int], bool]:
         """
         Solve a given emergency by dispatching resources from the supply pool.
 
@@ -122,7 +122,7 @@ class EmergencySolver:
         Returns:
             tuple[list[int], bool]: Indices of removed locations and completion status.
         """
-        if emergency_location.county != "Maramureș":
+        if emergency_location.county != priority_county:
             supply_locations = self.rank_external_suppliers(central, emergency_location, supply_locations)
 
         return self._fulfill_emergency_needs(emergency_location, supply_locations)

@@ -24,6 +24,7 @@ class AlgorithmConfig(BaseSettings):
     max_active_calls: int
     retry_count: int
     timeout: float
+    priority_county: str
 
     model_config = SettingsConfigDict(
         env_prefix= "ALGORITHM_",
