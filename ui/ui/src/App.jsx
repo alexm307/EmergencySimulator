@@ -61,6 +61,7 @@ function App() {
   };
 
   // Function to fetch resource markers from a given resource search endpoint.
+  // Change: filter out any markers of the same resource type so that they are overwritten.
   const searchResource = (resourceType) => {
     axios
       .get(`${API_BASE_URL}/${resourceType}/search`)
@@ -70,7 +71,11 @@ function App() {
           ...item,
           resourceType,
         }));
-        setResourceMarkers((prev) => [...prev, ...markers]);
+        setResourceMarkers((prev) => {
+          // Remove any markers with the same resource type.
+          const filtered = prev.filter((marker) => marker.resourceType !== resourceType);
+          return [...filtered, ...markers];
+        });
       })
       .catch((error) => {
         console.error(`Error fetching ${resourceType} resources:`, error);
