@@ -57,10 +57,11 @@ It is fully containerized with Docker and prepared for deployment in environment
 ### 1. Install dependencies (if not using Docker)
 
 ```bash
+cd algorithm # make sure you run these from inside the algorithm directory
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python main_refactor.py
+python main.py
 ```
 
 Make sure you have a `.env` file in your root directory with the variables listed above.
