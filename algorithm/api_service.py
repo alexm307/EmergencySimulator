@@ -11,11 +11,6 @@ class APIService:
     def _send_post_request_with_retry(self, url: str, params: dict, body: dict):
         """
         Send a POST request with retry logic.
-        Parameters:
-            url (str): The URL to send the request to.
-            params (dict): The parameters to include in the request.
-            retry (int): The number of retry attempts.
-            timeout (float): The timeout for each request in seconds.
         """
         retry = self.algorithm_config.retry_count
         timeout = self.algorithm_config.timeout
@@ -26,10 +21,18 @@ class APIService:
                 response = requests.post(url, params=params, timeout=timeout, json=body)
 
                 if response.status_code == 200:
-                    return  json.loads(response.text)
+                    if response.text.strip():
+                        try:
+                            return json.loads(response.text)
+                        except json.JSONDecodeError:
+                            print("Response returned 200 but contains invalid JSON.")
+                            return None
+                    else:
+                        print("Response returned 200 but is empty.")
+                        return None
                 else:
                     print(f"Attempt {attempt + 1}/{retry} failed with status code {response.status_code}")
-            
+
             except requests.exceptions.Timeout:
                 print(f"Attempt {attempt + 1}/{retry} timed out.")
 
@@ -37,21 +40,12 @@ class APIService:
                 print(f"Attempt {attempt + 1}/{retry} failed due to an error: {e}")
 
             attempt += 1
-        print(f"Request failed after {retry} attempts.")
+
+        print(f"POST request to {url} failed after {retry} attempts.")
 
     def _send_get_request_with_retry(self, url: str, params: dict = None):
         """
         Send a GET request with retry logic.
-        
-        Parameters:
-            url (str): The URL to send the request to.
-            params (dict): The parameters to include in the request.
-
-        Returns:
-            dict: The JSON-decoded response body if the request is successful.
-
-        Raises:
-            RuntimeError: If all retry attempts fail.
         """
         retry = self.algorithm_config.retry_count
         timeout = self.algorithm_config.timeout
@@ -62,8 +56,15 @@ class APIService:
                 response = requests.get(url, params=params, timeout=timeout)
 
                 if response.status_code == 200:
-                    #print("RESPONSE TEXT: ", response.text)
-                    return json.loads(response.text)
+                    if response.text.strip():
+                        try:
+                            return json.loads(response.text)
+                        except json.JSONDecodeError:
+                            print("Response returned 200 but contains invalid JSON.")
+                            return None
+                    else:
+                        print("Response returned 200 but is empty.")
+                        return None
                 else:
                     print(f"Attempt {attempt + 1}/{retry} failed with status code {response.status_code}")
 
@@ -75,7 +76,7 @@ class APIService:
 
             attempt += 1
 
-        raise RuntimeError(f"GET request to {url} failed after {retry} attempts.")
+        print(f"GET request to {url} failed after {retry} attempts.")
     
     def start_simulation(self):
         url = self.algorithm_config.api_host + "/control/reset"
@@ -130,6 +131,20 @@ class APIService:
             #print(f"Service name: {service_name}, City: {city}, County: {county}, Response: {response}")
         
         return response
+    
+    def dispatch_service_to_city(self, service_name, source_city, source_county, target_city, target_county, quantity):
+        url = self.algorithm_config.api_host + "/" + service_name + "/dispatch"
+        body = {
+            "sourceCity": source_city,
+            "sourceCounty": source_county,
+            "targetCity": target_city,
+            "targetCounty": target_county,
+            "quantity": quantity
+        }
+        response = self._send_post_request_with_retry(url, None, body)
+        #print(f"Service name: {service_name}, Source city: {source_city}, Source county: {source_county}, Destination city: {destination_city}, Destination county: {destination_county}, Quantity: {quantity}, Response: {response}")
+        return response
+    
 if __name__ == "__main__":
     import time
 
