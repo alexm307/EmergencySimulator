@@ -81,6 +81,7 @@ def rank_locations_by_distance(central: Location, locations: list[Location]) -> 
 
 def rank_external_suppliers(central:Location, city_in_need:Location, locations: list[Location]) -> list[Location]:
     """
+    Create a ranked list of most cost-effective locations to check for resources based on a cost function.
     """
     cost_list = []
     for loc in locations:
@@ -89,20 +90,11 @@ def rank_external_suppliers(central:Location, city_in_need:Location, locations: 
     ranked_external_suppliers = sorted(cost_list, key=lambda item: item[1])
     return [loc for loc, _ in ranked_external_suppliers]
 
-def solve_emergency(emergency_location: LocationBase, supply_locations_sorted: list[Location]):
+def solve_emergency(central: Location, emergency_location: LocationBase, supply_locations_sorted: list[Location]):
     if emergency_location.county == "Maramureș":
         fulfill_internal_needs(emergency_location, supply_locations_sorted)
-    fulfill_external_needs(emergency_location, supply_locations_sorted)
-
-
-def fulfill_external_needs(
-    city_in_need: LocationBase,
-    supply_locations_sorted: list[Location]): 
-    """
-    """
-    
-
-    
+    ranked_external_suppliers = rank_external_suppliers(central, emergency_location, supply_locations_sorted)
+    fulfill_internal_needs(emergency_location, ranked_external_suppliers)
 
 
 def fulfill_internal_needs(
