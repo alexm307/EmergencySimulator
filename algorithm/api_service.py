@@ -1,107 +1,129 @@
+import logging
 from config import get_algorithm_config
 import requests
 import json
-from models import Location, LocationBase, LocationApiResponse
 import uuid
+from models import LocationBase
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 
 class APIService:
+    """
+    Handles HTTP communication with the external API, including retries and dispatch logic.
+    """
+
     def __init__(self):
         self.algorithm_config = get_algorithm_config()
 
     def _send_post_request_with_retry(self, url: str, params: dict, body: dict):
         """
         Send a POST request with retry logic.
+
+        Args:
+            url (str): The request URL.
+            params (dict): Query parameters.
+            body (dict): JSON body payload.
+
+        Returns:
+            dict or None: Parsed response or None if failed.
         """
         retry = self.algorithm_config.retry_count
         timeout = self.algorithm_config.timeout
-        attempt = 0
 
-        while attempt < retry:
+        for attempt in range(retry):
             try:
                 response = requests.post(url, params=params, timeout=timeout, json=body)
-
                 if response.status_code == 200:
                     if response.text.strip():
                         try:
                             return json.loads(response.text)
                         except json.JSONDecodeError:
-                            print("Response returned 200 but contains invalid JSON.")
+                            logger.warning("Response returned 200 but contains invalid JSON.")
                             return None
                     else:
-                        print("Response returned 200 but is empty.")
+                        logger.warning("Response returned 200 but is empty.")
                         return None
                 else:
-                    print(f"Attempt {attempt + 1}/{retry} failed with status code {response.status_code}")
-
+                    logger.warning(f"Attempt {attempt + 1}/{retry} failed with status code {response.status_code}")
             except requests.exceptions.Timeout:
-                print(f"Attempt {attempt + 1}/{retry} timed out.")
-
+                logger.warning(f"Attempt {attempt + 1}/{retry} timed out.")
             except requests.exceptions.RequestException as e:
-                print(f"Attempt {attempt + 1}/{retry} failed due to an error: {e}")
+                logger.warning(f"Attempt {attempt + 1}/{retry} failed due to an error: {e}")
 
-            attempt += 1
-
-        print(f"POST request to {url} failed after {retry} attempts.")
+        logger.error(f"POST request to {url} failed after {retry} attempts.")
+        return None
 
     def _send_get_request_with_retry(self, url: str, params: dict = None):
         """
         Send a GET request with retry logic.
+
+        Args:
+            url (str): The request URL.
+            params (dict): Query parameters.
+
+        Returns:
+            dict or None: Parsed response or None if failed.
         """
         retry = self.algorithm_config.retry_count
         timeout = self.algorithm_config.timeout
-        attempt = 0
 
-        while attempt < retry:
+        for attempt in range(retry):
             try:
                 response = requests.get(url, params=params, timeout=timeout)
-
                 if response.status_code == 200:
                     if response.text.strip():
                         try:
-                            print("Response code 200, Response text:", response.text)
+                            logger.debug(f"Response 200: {response.text}")
                             return json.loads(response.text)
                         except json.JSONDecodeError:
-                            print("Response returned 200 but contains invalid JSON.")
+                            logger.warning("Response returned 200 but contains invalid JSON.")
                             return None
                     else:
-                        print("Response returned 200 but is empty.")
+                        logger.warning("Response returned 200 but is empty.")
                         return None
                 else:
-                    print(f"Attempt {attempt + 1}/{retry} failed with status code {response.status_code}")
-
+                    logger.warning(f"Attempt {attempt + 1}/{retry} failed with status code {response.status_code}")
             except requests.exceptions.Timeout:
-                print(f"Attempt {attempt + 1}/{retry} timed out.")
-
+                logger.warning(f"Attempt {attempt + 1}/{retry} timed out.")
             except requests.exceptions.RequestException as e:
-                print(f"Attempt {attempt + 1}/{retry} failed due to an error: {e}")
+                logger.warning(f"Attempt {attempt + 1}/{retry} failed due to an error: {e}")
 
-            attempt += 1
+        logger.error(f"GET request to {url} failed after {retry} attempts.")
+        return None
 
-        print(f"GET request to {url} failed after {retry} attempts.")
-    
     def start_simulation(self):
-        url = self.algorithm_config.api_host + "/control/reset"
+        """Initialize a new simulation run."""
+        url = f"{self.algorithm_config.api_host}/control/reset"
         params = {
             "seed": self.algorithm_config.seed,
             "targetDispatches": self.algorithm_config.target_dispatches,
-            "maxActiveCalls": self.algorithm_config.max_active_calls
+            "maxActiveCalls": self.algorithm_config.max_active_calls,
         }
-
         self._send_post_request_with_retry(url, params, None)
 
     def stop_simulation(self):
-        url = self.algorithm_config.api_host + "/control/stop"
-
+        """Stop the simulation run."""
+        url = f"{self.algorithm_config.api_host}/control/stop"
         return self._send_post_request_with_retry(url, None, None)
 
     def next(self):
-        url = self.algorithm_config.api_host + "/calls/next"
-
+        """Get the next emergency call."""
+        url = f"{self.algorithm_config.api_host}/calls/next"
         return self._send_get_request_with_retry(url)
-    
+
     def location_exists(self, city: str, county: str, locations: list[LocationBase]) -> int:
         """
-        Check if a location with the given city and county exists in the list of locations.
+        Check if a location exists in the list.
+
+        Args:
+            city (str): City name.
+            county (str): County name.
+            locations (list[LocationBase]): List of locations.
+
+        Returns:
+            int: Index of location if exists, otherwise -1.
         """
         for index, location in enumerate(locations):
             if location.city == city and location.county == county:
@@ -109,18 +131,23 @@ class APIService:
         return -1
 
     def get_locations(self) -> list[LocationBase]:
+        """
+        Fetch all locations with any available emergency services.
+
+        Returns:
+            list[LocationBase]: Unique locations.
+        """
         services = ["medical", "fire", "police", "rescue", "utility"]
         locations = []
         for service in services:
-            url = self.algorithm_config.api_host + "/" + service + "/search"
+            url = f"{self.algorithm_config.api_host}/{service}/search"
             response = self._send_get_request_with_retry(url, {})
             if response is None:
-                print(f"Failed to get {service} locations.")
-                response = []
-            
+                logger.warning(f"Failed to get {service} locations.")
+                continue
+
             for location in response:
-                existing_index = self.location_exists(location["city"], location["county"], locations)
-                if existing_index == -1:
+                if self.location_exists(location["city"], location["county"], locations) == -1:
                     locations.append(LocationBase(
                         location_id=uuid.uuid4(),
                         county=location["county"],
@@ -131,19 +158,43 @@ class APIService:
 
         return locations
 
-    def get_service_for_city(self, service_name, city, county) -> int:
-        url = self.algorithm_config.api_host + "/" + service_name + "/searchbycity"
-        params = {
-            "city": city,
-            "county": county
-        }
+    def get_service_for_city(self, service_name: str, city: str, county: str) -> int:
+        """
+        Get quantity of a specific service type available in a city.
+
+        Args:
+            service_name (str): Service type (e.g. medical).
+            city (str): City name.
+            county (str): County name.
+
+        Returns:
+            int: Quantity of service available.
+        """
+        url = f"{self.algorithm_config.api_host}/{service_name}/searchbycity"
+        params = {"city": city, "county": county}
         response = self._send_get_request_with_retry(url, params)
         if response is None:
             return 0
-        return max(response,0)
-    
-    def dispatch_service_to_city(self, service_name, source_city, source_county, target_city, target_county, quantity):
-        url = self.algorithm_config.api_host + "/" + service_name + "/dispatch"
+        return max(response, 0)
+
+    def dispatch_service_to_city(
+        self, service_name: str, source_city: str, source_county: str, target_city: str, target_county: str, quantity: int
+    ):
+        """
+        Dispatch a given quantity of service from a source to a target location.
+
+        Args:
+            service_name (str): Type of service.
+            source_city (str): Source city.
+            source_county (str): Source county.
+            target_city (str): Target city.
+            target_county (str): Target county.
+            quantity (int): Quantity to dispatch.
+
+        Returns:
+            dict or None: Response from the dispatch API.
+        """
+        url = f"{self.algorithm_config.api_host}/{service_name}/dispatch"
         body = {
             "sourceCity": source_city,
             "sourceCounty": source_county,
@@ -151,5 +202,4 @@ class APIService:
             "targetCounty": target_county,
             "quantity": quantity
         }
-        response = self._send_post_request_with_retry(url, None, body)
-        return response
+        return self._send_post_request_with_retry(url, None, body)

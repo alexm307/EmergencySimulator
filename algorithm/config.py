@@ -17,6 +17,7 @@ DEFAULT_DB_POOL_SIZE = 10
 ROOT_DIR = Path(__file__).parent
 
 class AlgorithmConfig(BaseSettings):
+    """Configuration for the algorithm."""
     api_host: str
     seed: str
     target_dispatches: int
@@ -34,12 +35,14 @@ class AlgorithmConfig(BaseSettings):
 
 @lru_cache
 def get_algorithm_config() -> AlgorithmConfig:
+    """Get algorithm configuration."""
     return AlgorithmConfig()
 
 DEFAULT_DB_DIALECT = "postgresql"
 DEFAULT_DB_POOL_SIZE = 10
 
 class DatabaseConfig(BaseSettings):
+    """Database configuration."""
     host: str
     port: int
     username: str
@@ -57,9 +60,11 @@ class DatabaseConfig(BaseSettings):
 
 @lru_cache
 def get_database_config() -> DatabaseConfig:
+    """Get database configuration."""
     return DatabaseConfig()
 
 def get_connection_string() -> str:
+    """Get the database connection string."""
     database_config = get_database_config()
     return (
         f"{database_config.dialect}://"
@@ -70,11 +75,13 @@ def get_connection_string() -> str:
 
 
 def get_database_engine() -> Engine:
+    """Get the database engine."""
     database_config = get_database_config()
     return create_engine(get_connection_string(database_config), pool_size=database_config.pool_size)
 
 
 def get_database_session() -> Iterator[Session]:
+    """Get a database session."""
     engine = get_database_engine()
     with Session(engine) as session:
         yield session

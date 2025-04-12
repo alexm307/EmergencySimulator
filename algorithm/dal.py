@@ -24,6 +24,7 @@ class LocationsDataAccessLayer:
     def list_locations(
         self
     ) -> Sequence[Location]:
+        """Fetch all locations from the database."""
         statement = select(Location)
         with Session(self._engine) as session:
             return session.exec(statement).fetchall()
@@ -33,6 +34,7 @@ class LocationsDataAccessLayer:
         city: str | None = None,
         county: str | None = None,
     ) -> Location:
+        """Fetch a specific location from the database with city and county."""
         statement = select(Location)
         
         if city:
@@ -51,6 +53,7 @@ class LocationsDataAccessLayer:
         self,
         location_base: LocationBase,
     ) -> Location:
+        """Create a new location in the database."""
         location = Location(
             **location_base.model_dump(),
         )

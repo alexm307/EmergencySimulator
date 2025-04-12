@@ -1,37 +1,29 @@
-services:
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    ports:
-      - 5432:5432
-    volumes:
-      - postgres:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=entity-management-api
+version: "3.9"
 
-  # backend:
-  #   profiles:
-  #     - backend
-  #   image: entity-management-api:local
-  #   restart: unless-stopped
-  #   build:
-  #     context: .
-  #   depends_on:
-  #     - postgres
-  #   ports:
-  #     - "8000:8000"
-  #   volumes:
-  #     - ./src:/opt/entity-management-api/src
-  #     - ./database:/opt/entity-management-api/database
-  #     - ./alembic.ini:/opt/entity-management-api/alembic.ini
-  #     - ./docker_entrypoint_local.sh:/opt/entity-management-api/docker_entrypoint_local.sh
-  #   environment:
-  #     - ENTITY_MANAGEMENT_API_DB_HOST=postgres
-  #   env_file: ./.env
-  #   entrypoint: /opt/entity-management-api/docker_entrypoint_local.sh
+services:
+  db:
+    image: postgres:15
+    container_name: emergency_db
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  algorithm:
+    build:
+      context: .
+    container_name: emergency_algorithm
+    env_file: .env
+    depends_on:
+      - db
+    command: python main_refactor.py
+    volumes:
+      - .:/app
+    restart: unless-stopped
 
 volumes:
-  postgres:
-    driver: local
+  postgres_data:

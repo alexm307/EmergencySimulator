@@ -1,62 +1,89 @@
-from models import LocationBase
+import logging
+from models import LocationBase, EmergencyLocation
 from api_service import APIService
-from utils import find_locations_epicenter, rank_locations_by_distance, parse_emergency_location_payload, solve_emergency
+from utils import EmergencySolver
 
-class Algorithm:
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+
+class AlgorithmEngine:
+    """
+    Manages simulation state, including location ranking and emergency resolution.
+    """
 
     def __init__(self):
+        self.api_service = APIService()
+        self.solver = EmergencySolver(self.api_service)
         self.locations = []
         self.ranking = []
 
-def algorithm_handler():
-    api_service = APIService()
-    algorithm = Algorithm()
+    def run(self):
+        """Run the main algorithm loop for emergency handling."""
+        self.api_service.start_simulation()
+        self.locations = self.api_service.get_locations()
 
-    api_service.start_simulation()
+        epicenter_coords = self.solver.find_locations_epicenter(self.locations, "Maramureș")
+        epicenter = LocationBase(
+            county="Maramureș",
+            city="Epicenter",
+            latitude=epicenter_coords[0],
+            longitude=epicenter_coords[1],
+        )
 
-    algorithm.locations = api_service.get_locations()
-    # for service in services:
-    #     for location in algorithm.locations:
-    #         quantity = api_service.get_service_for_city(service, location.city, location.county)
-    #         setattr(location, service, quantity)
+        self.ranking = self.solver.rank_locations_by_distance(epicenter, self.locations)
+        emergency = self.api_service.next()
 
-    epicenter_coords = find_locations_epicenter(algorithm.locations, "Maramureș")
-    #print(f"Epicenter coordinates: {epicenter_coords}")
+        while emergency is not None:
+            emergency_obj = self._parse_emergency(emergency)
+            indices_to_remove, completed = self.solver.solve_emergency(epicenter, emergency_obj, self.ranking)
+            logger.info(f"Emergency in {emergency_obj.city} completed: {completed}")
 
-    epicenter = LocationBase(
-        county="Maramureș",
-        city="Epicenter",
-        latitude=epicenter_coords[0],
-        longitude=epicenter_coords[1],
-        # medical=0,
-        # fire=0,
-        # police=0,
-        # rescue=0,
-        # utility=0,
-    )
+            for i in sorted(indices_to_remove, reverse=True):
+                del self.ranking[i]
 
-    algorithm.ranking = rank_locations_by_distance(epicenter, algorithm.locations, api_service)
-    # for location in algorithm.ranking:
-    #     print(f"Location: {location.city}, County: {location.county}, Medical: {location.medical}, Fire: {location.fire}, Police: {location.police}, Rescue: {location.rescue}, Utility: {location.utility}")
-    
-    emergency = api_service.next()
-    # idx = 0
-    while emergency is not None:
-        emergency_processed = parse_emergency_location_payload(emergency)
-        [indices_to_remove, completed] = solve_emergency(epicenter, emergency_processed, algorithm.ranking, api_service)
-        print(f"Emergency completed: {completed}")
-        new_ranking = algorithm.ranking.copy()
-        for i in sorted(indices_to_remove, reverse=True):
-            del new_ranking[i]
-        algorithm.ranking = new_ranking
-        # print(idx)
-        # if emergency_processed.county != "Maramureș":
-        #     print(f"Emergency: {emergency_processed}")
-        # idx = idx + 1
-        emergency = api_service.next()
+            emergency = self.api_service.next()
 
-    response = api_service.stop_simulation()
-    print(response)
+        response = self.api_service.stop_simulation()
+        logger.info(f"Simulation ended. Response: {response}")
+
+    def _parse_emergency(self, payload: dict) -> EmergencyLocation:
+        """
+        Parse raw emergency payload into EmergencyLocation instance.
+
+        Args:
+            payload (dict): Raw payload.
+
+        Returns:
+            EmergencyLocation: Parsed object.
+        """
+        type_mapping = {
+            "Medical": "medical",
+            "Fire": "fire",
+            "Police": "police",
+            "Rescue": "rescue",
+            "Utility": "utility",
+        }
+
+        city = payload.get("city", "")
+        county = payload.get("county", "")
+        latitude = payload.get("latitude", 0.0)
+        longitude = payload.get("longitude", 0.0)
+        resource_data = {field: 0 for field in type_mapping.values()}
+
+        for req in payload.get("requests", []):
+            key = type_mapping.get(req.get("Type"))
+            if key:
+                resource_data[key] = req.get("Quantity", 0)
+
+        return EmergencyLocation(
+            county=county,
+            city=city,
+            latitude=latitude,
+            longitude=longitude,
+            **resource_data,
+        )
+
 
 if __name__ == "__main__":
-    algorithm_handler()
+    AlgorithmEngine().run()

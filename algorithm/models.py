@@ -33,6 +33,7 @@ class LocationBase(BaseSQLModel):
     longitude: float
 
 class EmergencyLocation(LocationBase):
+    """Emergency location model for emergency response."""
     medical: int
     fire: int
     police: int
@@ -40,6 +41,7 @@ class EmergencyLocation(LocationBase):
     utility: int
 
 class Location(LocationBase, table=True):
+    """Location model for database."""
     __tablename__ = "locations"
 
     location_id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
