@@ -77,9 +77,10 @@ def rank_locations_by_distance(central: Location, locations: list[Location], api
         rescue = api_service.get_service_for_city("rescue", loc.city, loc.county)
         utility = api_service.get_service_for_city("utility", loc.city, loc.county)
         medical = api_service.get_service_for_city("medical", loc.city, loc.county)
-        if police == 0 and fire == 0 and rescue == 0 and utility == 0 and medical == 0:
+        if police <= 0 and fire <= 0 and rescue <= 0 and utility <= 0 and medical <= 0:
             #print(loc.city)
             continue # skip locations without any service
+        print("DISTANCE " + str(distance))
         distance_list.append((loc, distance))
 
     ranked_locations = sorted(distance_list, key=lambda item: item[1])

@@ -58,6 +58,7 @@ class APIService:
                 if response.status_code == 200:
                     if response.text.strip():
                         try:
+                            print("Response code 200, Response text:", response.text)
                             return json.loads(response.text)
                         except json.JSONDecodeError:
                             print("Response returned 200 but contains invalid JSON.")
@@ -97,40 +98,52 @@ class APIService:
         url = self.algorithm_config.api_host + "/calls/next"
 
         return self._send_get_request_with_retry(url)
+    
+    def location_exists(self, city: str, county: str, locations: list[LocationBase]) -> int:
+        """
+        Check if a location with the given city and county exists in the list of locations.
+        """
+        for index, location in enumerate(locations):
+            if location.city == city and location.county == county:
+                return index
+        return -1
 
-    def get_locations(self) -> list[Location]:
-        url = self.algorithm_config.api_host + "/locations"
-
-        response_body = self._send_get_request_with_retry(url)
+    def get_locations(self) -> list[LocationBase]:
+        services = ["medical", "fire", "police", "rescue", "utility"]
         locations = []
-        for location in response_body:
-            locations.append(Location(
-                location_id=uuid.uuid4(),
-                county=location["county"],
-                city=location["name"],
-                latitude=location["lat"],
-                longitude=location["long"],
-                medical=0,
-                fire=0,
-                police=0,
-                rescue=0,
-                utility=0,
-            ))
+        for service in services:
+            url = self.algorithm_config.api_host + "/" + service + "/search"
+            response = self._send_get_request_with_retry(url, {})
+            if response is None:
+                print(f"Failed to get {service} locations.")
+                response = []
+            
+            for location in response:
+                existing_index = self.location_exists(location["city"], location["county"], locations)
+                if existing_index == -1:
+                    # Create a new location and add it to the list
+                    locations.append(LocationBase(
+                        location_id=uuid.uuid4(),
+                        county=location["county"],
+                        city=location["city"],
+                        latitude=location["latitude"],
+                        longitude=location["longitude"],
+                    ))
 
         return locations
 
-    def get_service_for_city(self, service_name, city, county) -> list[LocationApiResponse]:
+    def get_service_for_city(self, service_name, city, county) -> int:
         url = self.algorithm_config.api_host + "/" + service_name + "/searchbycity"
         params = {
             "city": city,
             "county": county
         }
         response = self._send_get_request_with_retry(url, params)
-        if county != "Maramureș":
-            pass
-            #print(f"Service name: {service_name}, City: {city}, County: {county}, Response: {response}")
-        
-        return response
+        # if county != "Maramureș":
+        # print(f"Service name: {service_name}, City: {city}, County: {county}, Response: {response}")
+        if response is None:
+            return 0
+        return max(response,0)
     
     def dispatch_service_to_city(self, service_name, source_city, source_county, target_city, target_county, quantity):
         url = self.algorithm_config.api_host + "/" + service_name + "/dispatch"

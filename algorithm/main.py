@@ -17,13 +17,11 @@ def algorithm_handler():
     api_service.start_simulation()
 
     algorithm.locations = api_service.get_locations()
-    services = ["medical", "fire", "police", "rescue", "utility"]
     # for service in services:
     #     for location in algorithm.locations:
     #         quantity = api_service.get_service_for_city(service, location.city, location.county)
     #         setattr(location, service, quantity)
 
-    #print(algorithm.locations)
     epicenter_coords = find_locations_epicenter(algorithm.locations, "Maramureș")
     #print(f"Epicenter coordinates: {epicenter_coords}")
 
