@@ -58,7 +58,7 @@ Allows the user to dispatch resources by providing source and target location de
 
 Payload Structure:
 
-''' json
+'''json
 
 {
   "sourceCounty": "string",
