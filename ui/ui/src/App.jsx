@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Set the base URL for your API endpoints.
-const API_BASE_URL = 'http://localhost:4000'; // Adjust as needed
+const API_BASE_URL = 'http://localhost:5000';
 
-// Fix Leaflet default icon issue for Vite:
+// Create a custom red icon for emergency markers.
+const redIcon = new L.Icon({
+  iconUrl:
+    'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+// (Optional) Fix Leaflet’s default icon paths for non‑custom markers.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
@@ -15,223 +25,129 @@ L.Icon.Default.mergeOptions({
   shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
 });
 
-// --------------------
-// MapView Component
-// --------------------
-function MapView() {
-  const [locations, setLocations] = useState([]);
-
-  // Fetch all locations for pins from /locations endpoint.
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/locations`)
-      .then(response => setLocations(response.data))
-      .catch(error => console.error("Error fetching locations:", error));
-  }, []);
-
-  return (
-    <div>
-      <h2>Locations Map</h2>
-      <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: '600px', width: '100%' }}>
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {locations.map((loc, index) => (
-          <Marker position={[loc.lat, loc.lng]} key={index}>
-            <Popup>
-              {loc.name || "Location"} <br /> ({loc.lat}, {loc.lng})
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
-  );
-}
-
-// --------------------
-// AmbulanceSearch Component
-// --------------------
-function AmbulanceSearch() {
-  const [ambulanceData, setAmbulanceData] = useState([]);
-  const [city, setCity] = useState('');
-  const [cityData, setCityData] = useState(null);
-
-  // Get general ambulance availability.
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/medical/search`)
-      .then(response => setAmbulanceData(response.data))
-      .catch(error => console.error("Error fetching ambulance data:", error));
-  }, []);
-
-  // Search ambulance data by city.
-  const searchByCity = () => {
-    axios.get(`${API_BASE_URL}/medical/searchbycity`, { params: { city } })
-      .then(response => setCityData(response.data))
-      .catch(error => console.error("Error fetching ambulance data by city:", error));
-  };
-
-  return (
-    <div>
-      <h2>Ambulance Availability</h2>
-      <h3>All Ambulances:</h3>
-      <ul>
-        {ambulanceData.map((item, index) => (
-          <li key={index}>
-            {item.location}: {item.available} ambulances available
-          </li>
-        ))}
-      </ul>
-      <h3>Search by City:</h3>
-      <input
-        type="text"
-        value={city}
-        onChange={(e) => setCity(e.target.value)}
-        placeholder="Enter city name"
-      />
-      <button onClick={searchByCity}>Search</button>
-      {cityData && (
-        <div>
-          <h4>Results for {city}:</h4>
-          <p>{cityData.available} ambulances available.</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// --------------------
-// DispatchForm Component
-// --------------------
-function DispatchForm() {
-  const [source, setSource] = useState('');
-  const [destination, setDestination] = useState('');
-  const [ambulances, setAmbulances] = useState(1);
-  const [result, setResult] = useState(null);
-
-  // Post dispatch request to /medical/dispatch endpoint.
-  const handleDispatch = (e) => {
-    e.preventDefault();
-    axios.post(`${API_BASE_URL}/medical/dispatch`, {
-      source,
-      destination,
-      ambulances,
-    })
-    .then(response => setResult(response.data))
-    .catch(error => console.error("Error dispatching ambulances:", error));
-  };
-
-  return (
-    <div>
-      <h2>Dispatch Ambulances</h2>
-      <form onSubmit={handleDispatch}>
-        <div>
-          <label>Source Location:</label>
-          <input
-            type="text"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            placeholder="Enter source location"
-            required
-          />
-        </div>
-        <div>
-          <label>Destination Location:</label>
-          <input
-            type="text"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder="Enter destination location"
-            required
-          />
-        </div>
-        <div>
-          <label>Number of Ambulances:</label>
-          <input
-            type="number"
-            value={ambulances}
-            onChange={(e) => setAmbulances(e.target.value)}
-            min="1"
-            required
-          />
-        </div>
-        <button type="submit">Dispatch</button>
-      </form>
-      {result && (
-        <div>
-          <h4>Dispatch Result:</h4>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// --------------------
-// EmergencyCalls Component
-// --------------------
-function EmergencyCalls() {
-  const [nextCall, setNextCall] = useState(null);
-  const [queue, setQueue] = useState([]);
-
-  // Fetch next emergency call and the pending call queue.
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/calls/next`)
-      .then(response => setNextCall(response.data))
-      .catch(error => console.error("Error fetching next call:", error));
-
-    axios.get(`${API_BASE_URL}/calls/queue`)
-      .then(response => setQueue(response.data))
-      .catch(error => console.error("Error fetching call queue:", error));
-  }, []);
-
-  return (
-    <div>
-      <h2>Emergency Calls</h2>
-      <div>
-        <h3>Next Emergency Call:</h3>
-        {nextCall ? (
-          <div>
-            <p>Location: {nextCall.location}</p>
-            <p>Ambulances Required: {nextCall.ambulancesNeeded}</p>
-          </div>
-        ) : (
-          <p>No upcoming emergency call.</p>
-        )}
-      </div>
-      <div>
-        <h3>Call Queue:</h3>
-        <ul>
-          {queue.length > 0 ? queue.map((call, index) => (
-            <li key={index}>
-              Location: {call.location} | Ambulances Required: {call.ambulancesNeeded} | Status: {call.status}
-            </li>
-          )) : <p>No pending emergency calls.</p>}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-// --------------------
-// App Component (Tab-based UI)
-// --------------------
 function App() {
-  const [activeTab, setActiveTab] = useState('map');
+  // State to store emergencies fetched from the /calls/next endpoint.
+  const [emergencies, setEmergencies] = useState([]);
+
+  // Function to handle the Next Emergency button click.
+  const fetchNextEmergency = () => {
+    axios
+      .get(`${API_BASE_URL}/calls/next`)
+      .then((response) => {
+        // Expecting payload with city, county, coordinates and requests info.
+        const newEmergency = response.data;
+        setEmergencies((prev) => [...prev, newEmergency]);
+      })
+      .catch((error) => {
+        console.error('Error fetching next emergency:', error);
+      });
+  };
 
   return (
-    <div className="App">
-      <h1>Emergency Simulation Dashboard</h1>
-      <nav style={{ marginBottom: '20px' }}>
-        <button onClick={() => setActiveTab('map')}>Map</button>
-        <button onClick={() => setActiveTab('ambulance')}>Ambulance Search</button>
-        <button onClick={() => setActiveTab('dispatch')}>Dispatch</button>
-        <button onClick={() => setActiveTab('calls')}>Emergency Calls</button>
-      </nav>
-      <div style={{ padding: '20px' }}>
-        {activeTab === 'map' && <MapView />}
-        {activeTab === 'ambulance' && <AmbulanceSearch />}
-        {activeTab === 'dispatch' && <DispatchForm />}
-        {activeTab === 'calls' && <EmergencyCalls />}
+    <div
+      className="dashboard-container"
+      style={{
+        display: 'flex',
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Left Column: Map Container */}
+      <div style={{ flex: 3, position: 'relative', padding: '10px' }}>
+        <MapContainer
+          center={[47.7324, 23.5332]} // Default center. Adjust as needed.
+          zoom={13}
+          style={{ height: '100%', width: '100%', borderRadius: '8px' }}
+        >
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {emergencies.map((emergency, index) => (
+            <Marker
+              key={index}
+              position={[emergency.latitude, emergency.longitude]}
+              icon={redIcon}
+            >
+              <Popup>
+                <strong>
+                  {emergency.city}, {emergency.county}
+                </strong>
+                <br />
+                {emergency.requests.map((req, idx) => (
+                  <div key={idx}>
+                    {req.Type}: {req.Quantity}
+                  </div>
+                ))}
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+        {/* Next Emergency Button */}
+        <button
+          onClick={fetchNextEmergency}
+          style={{
+            position: 'absolute',
+            top: 20,
+            left: 20,
+            zIndex: 1000,
+            padding: '10px 15px',
+            backgroundColor: '#ff4d4d',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          Next Emergency
+        </button>
+      </div>
+
+      {/* Right Column: Scrollable Emergency Card List */}
+      <div
+        style={{
+          flex: 1,
+          borderLeft: '1px solid #ccc',
+          padding: '20px',
+          overflowY: 'auto',
+          backgroundColor: '#135',
+        }}
+      >
+        <h2>Emergency Details</h2>
+        {emergencies.length === 0 ? (
+          <p>No emergencies yet. Press "Next Emergency" to fetch one.</p>
+        ) : (
+          emergencies.map((emergency, index) => (
+            <div
+              key={index}
+              style={{
+                marginBottom: '15px',
+                padding: '15px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                backgroundColor: '#135',
+              }}
+            >
+              <h3 style={{ margin: '0 0 5px 0' }}>
+                {emergency.city}, {emergency.county}
+              </h3>
+              <p style={{ margin: '0 0 5px 0' }}>
+                <strong>Coordinates:</strong> {emergency.latitude}, {emergency.longitude}
+              </p>
+              <div>
+                <strong>Requests:</strong>
+                <ul style={{ paddingLeft: '20px', margin: '5px 0' }}>
+                  {emergency.requests.map((req, idx) => (
+                    <li key={idx}>
+                      {req.Type}: {req.Quantity}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
