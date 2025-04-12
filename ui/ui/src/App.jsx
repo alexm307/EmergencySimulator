@@ -3,6 +3,8 @@ import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Set the base URL for your API endpoints.
 const API_BASE_URL = 'http://localhost:5000';
@@ -40,6 +42,9 @@ function App() {
   const [emergencies, setEmergencies] = useState([]);
   // State to store resource markers from resource search endpoints.
   const [resourceMarkers, setResourceMarkers] = useState([]);
+  // State toggles for the collapsible lists.
+  const [showResourceList, setShowResourceList] = useState(true);
+  const [showEmergencyList, setShowEmergencyList] = useState(true);
 
   // Function to fetch and add a new emergency.
   const fetchNextEmergency = () => {
@@ -156,11 +161,14 @@ function App() {
         overflow: 'hidden',
       }}
     >
+      {/* ToastContainer to display notifications */}
+      <ToastContainer position="top-right" autoClose={5000} />
+
       {/* Left Column: Map Container */}
       <div style={{ flex: 3, position: 'relative', padding: '10px' }}>
         <MapContainer
           center={[47.7324, 23.5332]} // Default center.
-          zoom={13}
+          zoom={10}
           style={{ height: '100%', width: '100%', borderRadius: '8px' }}
         >
           <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -252,75 +260,121 @@ function App() {
 
         {/* Resource Results Section (Grouped by City) */}
         <div style={{ marginBottom: '20px' }}>
-          <h3>Grouped Resource Results</h3>
-          {groupedResourceArray.length === 0 ? (
-            <p>No resource search results yet.</p>
-          ) : (
-            groupedResourceArray.map((res, index) => (
-              <div
-                key={index}
-                style={{
-                  marginBottom: '10px',
-                  padding: '10px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  backgroundColor: '#fff',
-                  color: '#333',
-                }}
-              >
-                <h4 style={{ margin: '0 0 5px 0' }}>
-                  {res.city}, {res.county}
-                </h4>
-                <div>
-                  {Object.entries(res.resources).map(([type, qty], idx) => (
-                    <p key={idx} style={{ margin: '2px 0' }}>
-                      <strong>{type.toUpperCase()}:</strong> {qty}
-                    </p>
-                  ))}
+          <h3
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            Grouped Resources
+            <button
+              onClick={() => setShowResourceList(!showResourceList)}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+              }}
+            >
+              {showResourceList ? '–' : '+'}
+            </button>
+          </h3>
+          {showResourceList && (
+            groupedResourceArray.length === 0 ? (
+              <p>No resource search results yet.</p>
+            ) : (
+              groupedResourceArray.map((res, index) => (
+                <div
+                  key={index}
+                  style={{
+                    marginBottom: '10px',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff',
+                    color: '#333',
+                  }}
+                >
+                  <h4 style={{ margin: '0 0 5px 0' }}>
+                    {res.city}, {res.county}
+                  </h4>
+                  <div>
+                    {Object.entries(res.resources).map(([type, qty], idx) => (
+                      <p key={idx} style={{ margin: '2px 0' }}>
+                        <strong>{type.toUpperCase()}:</strong> {qty}
+                      </p>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))
+            )
           )}
         </div>
 
         <hr style={{ margin: '20px 0', borderColor: '#fff' }} />
 
         {/* Emergency Details Section */}
-        <h2>Emergency Details</h2>
-        {emergencies.length === 0 ? (
-          <p>No emergencies yet. Press "Next Emergency" to fetch one.</p>
-        ) : (
-          emergencies.map((emergency, index) => (
-            <div
-              key={index}
+        <div style={{ marginBottom: '20px' }}>
+          <h2
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            Emergency Details
+            <button
+              onClick={() => setShowEmergencyList(!showEmergencyList)}
               style={{
-                marginBottom: '15px',
-                padding: '15px',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                backgroundColor: '#fff',
-                color: '#333',
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
               }}
             >
-              <h3 style={{ margin: '0 0 5px 0' }}>
-                {emergency.city}, {emergency.county}
-              </h3>
-              <p style={{ margin: '0 0 5px 0' }}>
-                <strong>Coordinates:</strong> {emergency.latitude}, {emergency.longitude}
-              </p>
-              <div>
-                <strong>Requests:</strong>
-                <ul style={{ paddingLeft: '20px', margin: '5px 0' }}>
-                  {emergency.requests.map((req, idx) => (
-                    <li key={idx}>
-                      {req.Type}: {req.Quantity}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))
-        )}
+              {showEmergencyList ? '–' : '+'}
+            </button>
+          </h2>
+          {showEmergencyList && (
+            emergencies.length === 0 ? (
+              <p>No emergencies yet. Press "Next Emergency" to fetch one.</p>
+            ) : (
+              emergencies.map((emergency, index) => (
+                <div
+                  key={index}
+                  style={{
+                    marginBottom: '15px',
+                    padding: '15px',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff',
+                    color: '#333',
+                  }}
+                >
+                  <h3 style={{ margin: '0 0 5px 0' }}>
+                    {emergency.city}, {emergency.county}
+                  </h3>
+                  <p style={{ margin: '0 0 5px 0' }}>
+                    <strong>Coordinates:</strong> {emergency.latitude}, {emergency.longitude}
+                  </p>
+                  <div>
+                    <strong>Requests:</strong>
+                    <ul style={{ paddingLeft: '20px', margin: '5px 0' }}>
+                      {emergency.requests.map((req, idx) => (
+                        <li key={idx}>
+                          {req.Type}: {req.Quantity}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))
+            )
+          )}
+        </div>
 
         {/* Dispatch Form Section */}
         <DispatchForm onDispatchSuccess={handleDispatchSuccess} />
@@ -352,6 +406,7 @@ function DispatchForm({ onDispatchSuccess }) {
       .then((response) => {
         // Upon successful dispatch, update the local state via the callback.
         onDispatchSuccess({ resourceType, sourceCounty, sourceCity, targetCounty, targetCity, quantity: parseInt(quantity, 10) });
+        toast.success("Dispatch succeeded!");
         // Clear the form fields.
         setSourceCounty('');
         setSourceCity('');
@@ -361,6 +416,7 @@ function DispatchForm({ onDispatchSuccess }) {
       })
       .catch((error) => {
         console.error('Dispatch error:', error);
+        toast.error("Dispatch failed!");
       });
   };
 
