@@ -1,11 +1,11 @@
-#UI Module Documentation
+# UI Module Documentation
 
-##1. Overview
+## 1. Overview
 This UI module is built with React using the Vite bundler and leverages React Leaflet for interactive mapping. It serves as the front-end interface for an emergency simulation and resource management system. It fetches live data from various API endpoints related to emergencies and resource searches, provides visual mapping of emergency locations (red markers) and available resources (blue markers), and facilitates dispatching actions through a form.
 
 The UI module is designed to provide real-time visibility on emergencies and available resources, and it guides the user through dispatch decisions. A combination of automated data updates and manual user interactions creates a hybrid system for managing resources and emergencies.
 
-##2. Architecture and Components
+## 2. Architecture and Components
 Map Display
 Technologies: React Leaflet, OpenStreetMap tiles.
 
@@ -58,7 +58,7 @@ Allows the user to dispatch resources by providing source and target location de
 
 Payload Structure:
 
-'''json
+''' json
 
 {
   "sourceCounty": "string",
@@ -69,7 +69,7 @@ Payload Structure:
 }
 '''
 
-###API Endpoints:
+### API Endpoints:
 
 Dispatch requests are sent to endpoints like /fire/dispatch, /medical/dispatch, etc.
 
@@ -88,7 +88,7 @@ Displays temporary toasts (notifications) at the top-right corner.
 
 Shows a green toast on successful operations (like a successful dispatch) and a red toast when errors occur (e.g., API request failures).
 
-##3. Automated, Manual, and Hybrid Aspects
+## 3. Automated, Manual, and Hybrid Aspects
 Automated:
 
 The map updates automatically when the state changes (emergencies and resources).
@@ -111,7 +111,7 @@ The dispatch module is a hybrid; it requires manual input from the user while au
 
 Resource searches combine automated grouping and data updating with manual trigger actions.
 
-##4. Usage Instructions
+## 4. Usage Instructions
 ###Setup and Running
 Clone and Install Dependencies:
 
@@ -152,7 +152,7 @@ On form submission, the app sends a dispatch request and automatically updates t
 
 Success or error notifications appear as toast messages.
 
-##5. Extending the UI Module
+## 5. Extending the UI Module
 Adding New Endpoints:
 New endpoints can be integrated by following the patterns established in the resource search and dispatch functions.
 
@@ -162,7 +162,7 @@ Styles are inline in the current version. For a production-level interface, cons
 Real-Time Updates:
 For real-time functionality, consider integrating websockets or periodic polling for emergency and resource updates.
 
-##6. Troubleshooting and Support
+## 6. Troubleshooting and Support
 API Errors:
 
 Ensure your API endpoints are running on the expected port.
