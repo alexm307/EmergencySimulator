@@ -1,8 +1,6 @@
-import requests
-from models import Location, LocationBase
+from models import LocationBase
 from api_service import APIService
 from utils import find_locations_epicenter, rank_locations_by_distance, parse_emergency_location_payload, solve_emergency
-import uuid
 
 class Algorithm:
 

@@ -1,7 +1,6 @@
 from collections.abc import Iterator
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
 
 from pydantic_settings import (
     BaseSettings,
@@ -79,10 +78,3 @@ def get_database_session() -> Iterator[Session]:
     engine = get_database_engine()
     with Session(engine) as session:
         yield session
-
-if __name__ == "__main__":
-    # algorithm_config = get_algorithm_config()
-
-    # print(algorithm_config.api_host)
-
-    print(get_connection_string())

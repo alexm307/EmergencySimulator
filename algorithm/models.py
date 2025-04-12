@@ -31,11 +31,6 @@ class LocationBase(BaseSQLModel):
     city: str
     latitude: float
     longitude: float
-    # medical: int
-    # fire: int
-    # police: int
-    # rescue: int
-    # utility: int
 
 class EmergencyLocation(LocationBase):
     medical: int

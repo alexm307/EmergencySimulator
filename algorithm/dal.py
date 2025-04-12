@@ -1,14 +1,6 @@
 from collections.abc import Sequence
-from typing import Annotated
-from uuid import UUID
 
-
-from sqlalchemy import (
-    Engine,
-    func,
-)
 from sqlalchemy.exc import (
-    IntegrityError,
     NoResultFound,
 )
 from sqlmodel import (
@@ -67,59 +59,3 @@ class LocationsDataAccessLayer:
             session.commit()
             session.refresh(location)
             return location
-
-    # def update_location(
-    #     self,
-    #     location_id: UUID,
-    #     site_id: UUID,
-    #     location_request: LocationBase,
-    #     new_site: UUID | None,
-    # ) -> Location:
-    #     statement = select(Location).where(Location.site_id == site_id).where(Location.location_id == location_id)
-    #     with Session(self._engine) as session:
-    #         results = session.exec(statement)
-    #         try:
-    #             db_location = results.one()
-    #         except NoResultFound:
-    #             raise LocationNotFoundException
-
-    #         old_meter = session.exec(
-    #             select(Meter).where(Meter.meter_id == db_location.meter_id),
-    #         ).first()
-
-    #         db_location.sqlmodel_update(location_request.model_dump())
-    #         if new_site:
-    #             db_location.site_id = new_site
-    #         session.commit()
-
-    #         meter = session.exec(
-    #             select(Meter).where(Meter.meter_id == db_location.meter_id),
-    #         ).first()
-
-    #         if meter and old_meter:
-    #             meter.measuring = db_location.display_name
-    #             meter.measuring_type = MeterMeasuringType.location
-
-    #             old_meter.measuring = None
-    #             old_meter.measuring_type = None
-
-    #             session.add(meter)
-    #             session.add(old_meter)
-    #             session.commit()
-    #             session.refresh(meter)
-    #             session.refresh(old_meter)
-    #             session.refresh(db_location)
-    #         else:
-    #             raise MeterNotFoundException
-
-    #         return db_location
-
-    # def delete_location(self, location_id: UUID, site_id: UUID) -> None:
-    #     statement = select(location).where(location.site_id == site_id).where(location.location_id == location_id)
-    #     with Session(self._engine) as session:
-    #         try:
-    #             db_location = session.exec(statement).one()
-    #         except NoResultFound:
-    #             raise LocationNotFoundException
-    #         session.delete(db_location)
-    #         session.commit()

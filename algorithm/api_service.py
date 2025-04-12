@@ -121,7 +121,6 @@ class APIService:
             for location in response:
                 existing_index = self.location_exists(location["city"], location["county"], locations)
                 if existing_index == -1:
-                    # Create a new location and add it to the list
                     locations.append(LocationBase(
                         location_id=uuid.uuid4(),
                         county=location["county"],
@@ -139,8 +138,6 @@ class APIService:
             "county": county
         }
         response = self._send_get_request_with_retry(url, params)
-        # if county != "Maramureș":
-        # print(f"Service name: {service_name}, City: {city}, County: {county}, Response: {response}")
         if response is None:
             return 0
         return max(response,0)
@@ -155,24 +152,4 @@ class APIService:
             "quantity": quantity
         }
         response = self._send_post_request_with_retry(url, None, body)
-        #print(f"Service name: {service_name}, Source city: {source_city}, Source county: {source_county}, Destination city: {destination_city}, Destination county: {destination_county}, Quantity: {quantity}, Response: {response}")
         return response
-    
-if __name__ == "__main__":
-    import time
-
-    api_service = APIService()
-    
-    api_service.start_simulation()
-
-    locations = api_service.get_locations()
-    print(locations)
-    # api_service.next()
-
-    # api_service.next()
-
-    time.sleep(3)
-
-    # api_service.next()
-    
-    api_service.stop_simulation()
